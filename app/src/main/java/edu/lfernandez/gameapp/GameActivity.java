@@ -193,10 +193,9 @@ public class GameActivity extends AppCompatActivity implements SensorEventListen
                     startActivity(intent);
                 }
                 else{
-                    textField.setText("Game Over!");
-                    score = 0;
                     Intent resultActivity = new Intent(this,ResultActivity.class);
                     getIntent().putExtra("score",score);
+                    startActivity(resultActivity);
                 }
         }
     }
