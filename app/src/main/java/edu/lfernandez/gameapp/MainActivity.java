@@ -9,12 +9,15 @@ import androidx.appcompat.app.AppCompatActivity;
 
 
 import android.os.CountDownTimer;
-import android.util.Log;
-import android.view.View;
+
+import android.os.Parcelable;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private final int WEST = 1;
@@ -23,10 +26,9 @@ public class MainActivity extends AppCompatActivity {
     private final int NORTH = 4;
     Animation anim;
     Button bEast, bWest, bSouth, bNorth;
+    int sequenceCount = 4, n = 0, score;
     TextView textField;
-    int sequenceCount = 4, n = 0;
-    int[] gameSequence = new int[120];
-    int arrayIndex = 0;
+    List<Integer> gameSequence = new ArrayList<>();
 
     CountDownTimer ct = new CountDownTimer(6000,  1500) {
 
@@ -37,15 +39,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void onFinish() {
-            // we now have the game sequence
-
-
             // start next activity
             Intent gameActivity = new Intent(MainActivity.this,GameActivity.class);
-            gameActivity.putExtra("sequence", gameSequence);
+            gameActivity.putIntegerArrayListExtra("sequence", (ArrayList<Integer>) gameSequence);
+            gameActivity.putExtra("score",score);
             //Move to GameActivity page
             startActivity(gameActivity);
-            // int[] arrayB = extras.getIntArray("numbers");
         }
     };
 
@@ -54,12 +53,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textField = findViewById(R.id.textView);
         bEast = findViewById(R.id.east);
         bWest = findViewById(R.id.west);
         bSouth = findViewById(R.id.south);
         bNorth = findViewById(R.id.north);
-
+        score = getIntent().getIntExtra("score",0);
+        textField = findViewById(R.id.textView);
         ct.start();
 
     }
@@ -70,19 +69,19 @@ public class MainActivity extends AppCompatActivity {
         switch (n) {
             case 1:
                 flashButton(bWest);
-                gameSequence[arrayIndex++] = WEST;
+                gameSequence.add(WEST);
                 break;
             case 2:
                 flashButton(bEast);
-                gameSequence[arrayIndex++] = EAST;
+                gameSequence.add(EAST);
                 break;
             case 3:
                 flashButton(bSouth);
-                gameSequence[arrayIndex++] = SOUTH;
+                gameSequence.add(SOUTH);
                 break;
             case 4:
                 flashButton(bNorth);
-                gameSequence[arrayIndex++] = NORTH;
+                gameSequence.add(NORTH);
                 break;
             default:
                 break;

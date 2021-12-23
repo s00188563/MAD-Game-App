@@ -1,6 +1,7 @@
 package edu.lfernandez.gameapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.IntentCompat;
 
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -8,38 +9,41 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.util.Log;
-import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.TextView;
 
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameActivity extends AppCompatActivity implements SensorEventListener {
 
     // experimental values for hi and lo magnitude limits
-    private final double NORTH_START = 9.0;     // upper mag limit
+    private final double NORTH_START = 9.0;
     private final double NORTH_END = 6.0;
     private final double SOUTH_START = 1.0;
     private final double SOUTH_END = -3.0;
     private final double WEST_START = 0.0;
     private final double WEST_END = -2.0;
     private final double EAST_START = 0.0;
-    private final double EAST_END = 3.0;
-    // lower mag limit
+    private final double EAST_END = 2.5;
     boolean nHighLimit = false;
     boolean sHighLimit = false;
     boolean wHighLimit = false;
     boolean eHighLimit = false;
-    int nCounter = 0;
-    int sCounter = 0;
-    int wCounter = 0;
-    int eCounter = 0;
+    private final int WEST = 1;
+    private final int EAST = 2;
+    private final int SOUTH = 3;
+    private final int NORTH = 4;
+    Button bEast, bWest, bSouth, bNorth;
+    TextView textField;
+    List<Integer> sequence,answers = new ArrayList<>();
+    int arrayIndex,score=0;
+    Animation anim;
 
-    TextView tvx, tvy, tvz, tvSteps;
     private SensorManager mSensorManager;
     private Sensor mSensor;
 
@@ -48,15 +52,20 @@ public class GameActivity extends AppCompatActivity implements SensorEventListen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.game_activity);
-
-        tvx = findViewById(R.id.tvX);
-        tvy = findViewById(R.id.tvY);
-        tvz = findViewById(R.id.tvZ);
-        tvSteps = findViewById(R.id.tvSteps);
-
+        textField = findViewById(R.id.textView);
         // we are going to use the sensor service
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        bEast = findViewById(R.id.east);
+        bWest = findViewById(R.id.west);
+        bSouth = findViewById(R.id.south);
+        bNorth = findViewById(R.id.north);
+        sequence = getIntent().getExtras().getIntegerArrayList("sequence");
+        score = getIntent().getIntExtra("score",0);
+        answers.clear();
+        arrayIndex = 0;
+        textField.setText("score: "+score);
     }
     /*
      * When the app is brought to the foreground - using app on screen
@@ -84,10 +93,6 @@ public class GameActivity extends AppCompatActivity implements SensorEventListen
         double y = round(event.values[1],3);
         double z = round(event.values[2],3);
 
-/*        tvx.setText(String.valueOf(x));
-        tvy.setText(String.valueOf(y));
-        tvz.setText(String.valueOf(z));*/
-
 
         // Can we get a north movement
         // you need to do your own mag calculating
@@ -106,26 +111,30 @@ public class GameActivity extends AppCompatActivity implements SensorEventListen
 
         if ((x < NORTH_END) && (nHighLimit)) {
             // we have a tilt to the north
-            nCounter++;
-            tvSteps.setText(String.valueOf(nCounter));
+            answers.add(NORTH);
+            oneButton(answers.get(arrayIndex++));
+            checkIfOver();
             nHighLimit = false;
         }
         if ((z < SOUTH_END) && (sHighLimit)) {
-            // we have a tilt to the north
-            sCounter++;
-            tvx.setText(String.valueOf(sCounter));
+            // we have a tilt to the south
+            answers.add(SOUTH);
+            oneButton(answers.get(arrayIndex++));
+            checkIfOver();
             sHighLimit = false;
         }
         if ((y < WEST_END) && (wHighLimit)) {
-            // we have a tilt to the north
-            wCounter++;
-            tvy.setText(String.valueOf(wCounter));
+            // we have a tilt to the west
+            answers.add(WEST);
+            oneButton(answers.get(arrayIndex++));
+            checkIfOver();
             wHighLimit = false;
         }
         if ((y > EAST_END) && (eHighLimit)) {
-            // we have a tilt to the north
-            eCounter++;
-            tvz.setText(String.valueOf(eCounter));
+            // we have a tilt to the east
+            answers.add(EAST);
+            oneButton(answers.get(arrayIndex++));
+            checkIfOver();
             eHighLimit = false;
         }
     }
@@ -142,6 +151,54 @@ public class GameActivity extends AppCompatActivity implements SensorEventListen
         value = value * factor;
         long tmp = Math.round(value);
         return (double) tmp / factor;
+    }
+
+    private void oneButton(int n) {
+        switch (n) {
+            case 1:
+                flashButton(bWest);
+                break;
+            case 2:
+                flashButton(bEast);
+                break;
+            case 3:
+                flashButton(bSouth);
+                break;
+            case 4:
+                flashButton(bNorth);
+                break;
+            default:
+                break;
+        }   // end switch
+    }
+
+    private void flashButton(Button button) {
+        anim = new AlphaAnimation(1,0);
+        anim.setDuration(500); //You can manage the blinking time with this parameter
+
+        anim.setRepeatCount(0);
+        button.startAnimation(anim);
+    }
+
+    private void checkIfOver() {
+        Log.d("game sequence length", String.valueOf(sequence.size()));
+        Log.d("answer sequence length", String.valueOf(answers.size()));
+        if (sequence.size() == answers.size()) {
+            for (int i = 0; i < 4; i++)
+                if (sequence.get(i).equals(answers.get(i))){
+                    score += 2;
+                    Intent intent = new Intent(this,MainActivity.class);
+                    intent.putExtra("score",score);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                }
+                else{
+                    textField.setText("Game Over!");
+                    score = 0;
+                    Intent resultActivity = new Intent(this,ResultActivity.class);
+                    getIntent().putExtra("score",score);
+                }
+        }
     }
 
 }
